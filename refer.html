@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Referrals - Bitcoin Miner</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        :root {
+            --btc-orange: #F7931A;
+            --bg-dark: #000000;
+            --glass: rgba(30, 30, 30, 0.9);
+            --border: rgba(247, 147, 26, 0.2);
+            --font-main: 'Outfit', sans-serif;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 0%, rgba(247, 147, 26, 0.2) 0%, transparent 60%);
+            color: white;
+            font-family: var(--font-main);
+            margin: 0; height: 100vh;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 20px; display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.1); border: none; color: white;
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; cursor: pointer;
+        }
+
+        .content { flex: 1; overflow-y: auto; padding: 20px; text-align: center; }
+
+        .invite-card {
+            background: linear-gradient(135deg, #2a1a00, #333);
+            border: 1px solid var(--border);
+            border-radius: 25px;
+            padding: 25px 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(247, 147, 26, 0.2);
+            position: relative; overflow: hidden;
+        }
+        .invite-card::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(247, 147, 26, 0.1) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .coin-img { width: 80px; margin-bottom: 10px; filter: drop-shadow(0 0 15px var(--btc-orange)); animation: float 3s infinite ease-in-out; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        h1 { margin: 0; font-size: 24px; font-weight: 900; color: white; }
+        p { color: #aaa; font-size: 13px; margin: 5px 0 15px; }
+
+        .invite-btn {
+            width: 100%; padding: 15px; border-radius: 15px; border: none;
+            background: linear-gradient(45deg, var(--btc-orange), #ffae42);
+            color: #000; font-weight: 800; font-size: 16px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 5px 15px rgba(247, 147, 26, 0.3); transition: transform 0.1s;
+        }
+        .invite-btn:active { transform: scale(0.98); }
+
+        .link-area {
+            background: rgba(0,0,0,0.3); border: 1px dashed #444;
+            padding: 10px; border-radius: 10px; margin-top: 15px;
+            font-size: 11px; color: #666; word-break: break-all;
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            cursor: pointer;
+        }
+
+        .withdraw-card {
+            background: var(--glass);
+            padding: 20px; border-radius: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 25px; text-align: left;
+        }
+        .w-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px; font-weight: bold; font-size: 14px;
+        }
+        .status-badge {
+            padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 900; text-transform: uppercase;
+        }
+        .status-locked { background: rgba(255, 71, 87, 0.15); color: #ff4757; border: 1px solid #ff4757; }
+        .status-unlocked { background: rgba(247, 147, 26, 0.15); color: var(--btc-orange); border: 1px solid var(--btc-orange); }
+
+        .progress-track {
+            background: #222; height: 12px; border-radius: 6px; overflow: hidden; border: 1px solid #333;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, #ff4757, #ff6b81);
+            transition: width 1s ease, background 0.3s;
+        }
+        .progress-fill.done { background: var(--btc-orange); }
+
+        .w-footer { margin-top: 8px; font-size: 12px; color: #aaa; text-align: right; }
+
+        .stats-grid { display: flex; gap: 10px; margin-bottom: 25px; }
+        .stat-box {
+            flex: 1; background: rgba(255,255,255,0.05); padding: 15px;
+            border-radius: 15px; text-align: center; border: 1px solid var(--border);
+        }
+        .stat-val { font-size: 20px; font-weight: 900; color: white; }
+        .stat-label { font-size: 11px; color: #888; text-transform: uppercase; }
+
+        .list-header { text-align: left; font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #ddd; }
+        .ref-list { display: flex; flex-direction: column; gap: 10px; padding-bottom: 50px; }
+        
+        .ref-item {
+            background: var(--glass); padding: 12px; border-radius: 15px;
+            display: flex; align-items: center; justify-content: space-between;
+            border: 1px solid rgba(255,255,255,0.05);
+            opacity: 0; transform: translateY(20px);
+            animation: slideIn 0.4s forwards;
+        }
+        @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
+
+        .ref-user { display: flex; align-items: center; gap: 10px; }
+        .ref-avatar {
+            width: 35px; height: 35px; background: linear-gradient(135deg, #333, #555);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: bold; color: #ccc;
+        }
+        .ref-name { font-weight: bold; font-size: 13px; color: white; }
+        .ref-status { font-size: 10px; color: var(--btc-orange); display: flex; align-items: center; gap: 3px; }
+        
+        .ref-reward {
+            font-weight: 900; color: var(--btc-orange); font-size: 13px;
+            background: rgba(247, 147, 26, 0.1); padding: 4px 8px; border-radius: 8px;
+        }
+
+        .empty-state { color: #666; font-size: 13px; margin-top: 30px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button class="back-btn" onclick="window.location.href='index.html'"><i class="ri-arrow-left-line"></i></button>
+        <h3 style="margin:0;">Friends</h3>
+        <div style="width:40px;"></div>
+    </div>
+
+    <div class="content">
+        
+        <div class="invite-card">
+            <img src="https://cdn-icons-png.flaticon.com/512/9472/9472099.png" class="coin-img">
+            <h1>Invite & Earn</h1>
+            <p>Earn 10,000 Coins for every friend!</p>
+            
+            <button class="invite-btn" onclick="inviteFriends()">
+                <i class="ri-user-add-line"></i> Invite Friends
+            </button>
+
+            <div class="link-area" onclick="copyLink()">
+                <span id="ref-link">Generating link...</span>
+                <i class="ri-file-copy-line" style="font-size:16px; color:white;"></i>
+            </div>
+        </div>
+
+        <div class="withdraw-card">
+            <div class="w-header">
+                <span>Withdraw Unlock</span>
+                <span id="w-status" class="status-badge status-locked"><i class="ri-lock-2-fill"></i> Locked</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="w-progress"></div>
+            </div>
+            <div class="w-footer">
+                <span id="w-current">0</span>/30 Friends Invited
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-val" id="ref-count">0</div>
+                <div class="stat-label">Friends</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-val" id="ref-earnings">0</div>
+                <div class="stat-label">Coins Earned</div>
+            </div>
+        </div>
+
+        <div class="list-header">Your Referrals</div>
+        <div id="referral-list" class="ref-list">
+            <div class="empty-state">Loading data...</div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAghmBjfnclb4yIwEmx7Uxssj7cpZkea1Q",
+            authDomain: "solanacoin-6d9a8.firebaseapp.com",
+            databaseURL: "https://solanacoin-6d9a8-default-rtdb.firebaseio.com",
+            projectId: "solanacoin-6d9a8",
+            storageBucket: "solanacoin-6d9a8.firebasestorage.app",
+            messagingSenderId: "269025348490",
+            appId: "1:269025348490:web:87c95514a1d86485169673",
+            measurementId: "G-00X84VW123"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const BOT_USERNAME = 'bitcointapbot'; 
+        const APP_NAME = 'bitcointap'; 
+        const TARGET_REF = 30;
+
+        let userId = localStorage.getItem('local_sim_id');
+        let inviteLink = "";
+
+        async function init() {
+            if(!userId) {
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    userId = tg.initDataUnsafe.user.id.toString();
+                } else {
+                    alert("Please go back to Main Menu first.");
+                    return;
+                }
+            }
+
+            inviteLink = `https://t.me/${BOT_USERNAME}/${APP_NAME}?startapp=ref_${userId}`;
+            document.getElementById('ref-link').innerText = inviteLink;
+
+            loadReferrals();
+        }
+
+        async function loadReferrals() {
+            const listEl = document.getElementById('referral-list');
+            
+            try {
+                const snapshot = await get(ref(db, 'btc_users/' + userId + '/referrals'));
+                
+                if(snapshot.exists()) {
+                    const referrals = snapshot.val();
+                    const refIds = Object.keys(referrals);
+                    const count = refIds.length;
+                    
+                    document.getElementById('ref-count').innerText = count;
+                    animateValue("ref-earnings", 0, count * 10000, 1500);
+                    updateUnlockProgress(count);
+
+                    listEl.innerHTML = ''; 
+                    const promises = refIds.map(async (id) => {
+                        const userSnap = await get(ref(db, 'btc_users/' + id));
+                        if(userSnap.exists()) return userSnap.val();
+                        return { username: "Unknown User" };
+                    });
+
+                    const users = await Promise.all(promises);
+
+                    users.forEach((u, index) => {
+                        const delay = index * 0.1;
+                        const name = u.username ? u.username : "Friend";
+                        const firstChar = name.charAt(0).toUpperCase();
+
+                        listEl.innerHTML += `
+                        <div class="ref-item" style="animation-delay: ${delay}s">
+                            <div class="ref-user">
+                                <div class="ref-avatar">${firstChar}</div>
+                                <div>
+                                    <div class="ref-name">${name}</div>
+                                    <div class="ref-status"><i class="ri-checkbox-circle-fill"></i> Success</div>
+                                </div>
+                            </div>
+                            <div class="ref-reward">+10K</div>
+                        </div>`;
+                    });
+
+                } else {
+                    listEl.innerHTML = '<div class="empty-state">You haven\'t invited anyone yet.</div>';
+                    updateUnlockProgress(0);
+                }
+            } catch(e) {
+                console.error(e);
+                listEl.innerHTML = '<div class="empty-state">Error loading data.</div>';
+            }
+        }
+
+        function updateUnlockProgress(count) {
+            const current = Math.min(count, TARGET_REF);
+            const percentage = (current / TARGET_REF) * 100;
+            
+            document.getElementById('w-current').innerText = current;
+            const fill = document.getElementById('w-progress');
+            fill.style.width = percentage + '%';
+
+            const statusEl = document.getElementById('w-status');
+
+            if (count >= TARGET_REF) {
+                statusEl.className = 'status-badge status-unlocked';
+                statusEl.innerHTML = '<i class="ri-lock-unlock-fill"></i> Unlocked';
+                fill.classList.add('done');
+            } else {
+                statusEl.className = 'status-badge status-locked';
+                statusEl.innerHTML = '<i class="ri-lock-2-fill"></i> Locked';
+                fill.classList.remove('done');
+            }
+        }
+
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        window.inviteFriends = () => {
+            const text = "Join Bitcoin Miner Pro! 🚀 Mine BTC for free and get 10k coins bonus!";
+            const url = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(text)}`;
+            tg.openTelegramLink(url);
+        }
+
+        window.copyLink = () => {
+            navigator.clipboard.writeText(inviteLink).then(() => {
+                tg.showAlert("Link Copied!");
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
